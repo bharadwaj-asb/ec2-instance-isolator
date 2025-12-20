@@ -39,9 +39,8 @@ def main(instance_id):
             print(f'No instance found with Instance ID: {instance_id}')
             return 
         print(response) # Convert to JSON file
-
     except Exception as e:
-        print(f'Exception occurred when fetching metadata using instance-id: {e}')
+        print(f'Exception occurred when fetching metadata using instance-id:{instance_id} \n {e}')
 
     # Get associated EC2 instance profiles
     try:
