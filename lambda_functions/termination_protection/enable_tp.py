@@ -7,7 +7,7 @@ except Exception as e:
 
 def main(instance_id):
     try:
-        response = client.modify_instance_attribute(InstanceID=instance_id, DisableApiTermination={
+        response = client.modify_instance_attribute(InstanceId=instance_id, DisableApiTermination={
         'Value': True
         })
     except Exception as e:
