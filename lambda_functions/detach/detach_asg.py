@@ -13,6 +13,8 @@ def main(instance_id, asg_name):
         AutoScalingGroupName = asg_name,
         ShouldDecrementDesiredCapacity=False
         )
+        print(f'Output status is {response['Activities'][0]}') # To be replaced by calling next function in the flow.
+
     except Exception as e:
         print(f'Exception occurred when detaching auto-scaling the the instance: {instance_id} {e}')    
 
