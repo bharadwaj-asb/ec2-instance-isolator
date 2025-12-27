@@ -22,7 +22,7 @@ def main(instance_id,sg_id):
                     }]}])
         
         group_id = r1['GroupId']
-        # An entire block just to remove any ingress and egress rules that are created by default for new SGs.
+        # Block just to remove the ingress/egress rules that are created by default for new SGs.
         r1 = client.describe_security_group_rules(
             Filters=[
                 {
