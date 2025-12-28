@@ -1,0 +1,33 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "WriteOnly",
+            "Effect": "Allow",
+            "Action": [
+                "ec2:RevokeSecurityGroupIngress",
+                "ec2:DeleteTags",
+                "ec2:CreateSecurityGroup",
+                "ec2:CreateTags",
+                "ec2:RevokeSecurityGroupEgress",
+                "ec2:CreateSnapshot",
+                "ec2:ModifyInstanceAttribute",
+                "autoscaling:DetachInstances",
+                "elasticloadbalancing:DeregisterInstancesFromLoadBalancer",
+                "elasticloadbalancing:DeregisterTargets"
+            ],
+            "Resource": "arn:aws:ec2:*:961341555743:instance/*"
+        },
+        {
+            "Sid": "ReadOnly",
+            "Effect": "Allow",
+            "Action": [
+                "ec2:DescribeInstances",
+                "ec2:DescribeSecurityGroupRules",
+                "ec2:DescribeTags",
+                "ec2:DescribeSecurityGroups"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
