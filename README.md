@@ -5,13 +5,13 @@ An automated, security-first incident response workflow that isolates compromise
 This project focuses on containment and forensic preservation, not remediation, ensuring compromised workloads are safely quarantined for investigation without interference from Auto Scaling or load-balancing mechanisms.
 
 ## Objective
-1. Design and implement an automated incident response workflow that:
-2. Preserves the compromised instance as forensic evidence
-3. Prevents Auto Scaling termination and replacement
-4. Isolates the instance from network traffic
-5. Captures instance state and disk artifacts securely
-6. Maintains auditability and investigation context
-7. All actions are performed via AWS control-plane APIs, without accessing the instance itself.
+Design and implement an automated incident response workflow that:
+1. Preserves the compromised instance as forensic evidence
+2. Prevents Auto Scaling termination and replacement
+3. Isolates the instance from network traffic
+4. Captures instance state and disk artifacts securely
+5. Maintains auditability and investigation context
+6. All actions are performed via AWS control-plane APIs, without accessing the instance itself.
 
 ## Incident Response Workflow
 1. Capture EC2 control-plane metadata (pre-change state)
