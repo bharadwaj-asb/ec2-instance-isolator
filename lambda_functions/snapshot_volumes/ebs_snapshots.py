@@ -1,4 +1,5 @@
 import boto3
+from datetime import datetime
 
 try:
     client = boto3.client('ec2')
@@ -7,28 +8,31 @@ except Exception as e:
 
 
 # Function to create snapshot and encrypt it
-def main(vol_id, elb_name): 
-
+def main(vols): 
     try:
-        response = client.create_snapshot(
-            VolumeId= vol_id,
-            TagSpecifications=[
-                {
-                    'Tags': [
-                        {
-                            'Key': 'string',
-                            'Value': 'string'
-                        }
-                    ]
-                }
-            ]
-            ) 
+        for each_vol in vols:
+            response = client.create_snapshot(
+                VolumeId= each_vol,
+                TagSpecifications=[
+                    {
+                        'Tags': [
+                            {
+                                'Key': 'IncidentStatus',
+                                'Value': 'Quarantined'
+                            },
+                            {
+                                'Key': 'QuarantineTime',
+                                'Value': datetime.now()
+                            }
+                        ]
+                    }
+                ]
+                ) 
+            # Put each of these snapshots in an S3 bucket
     except Exception as e:
         print(f'Exception occurred when deregistering instance: {e}')
 
 
 if __name__ == '__main__':
-    instance_id = ''
-    elb_name = ''
-    target_group_arn = ''
-    main(vol_id, elb_name)
+    vols = []
+    main(vols)
