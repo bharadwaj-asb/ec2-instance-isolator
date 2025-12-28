@@ -16,7 +16,7 @@
                 "elasticloadbalancing:DeregisterInstancesFromLoadBalancer",
                 "elasticloadbalancing:DeregisterTargets"
             ],
-            "Resource": "arn:aws:ec2:*:961341555743:instance/*"
+            "Resource": "arn:aws:ec2:*:*:instance/*"
         },
         {
             "Sid": "ReadOnly",
