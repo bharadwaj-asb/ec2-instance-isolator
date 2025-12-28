@@ -52,7 +52,8 @@ def main(instance_id):
         print(f'Exception occurred when fetching IAM role using instance-id: {e}')
 
     # Get associated ASG
-    # Get associated ELB target groups
+    # Get associated ELB target groups and elb name
+    # Get associated EBS volumes
 
 
 if __name__ == "__main__":
