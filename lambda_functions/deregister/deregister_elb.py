@@ -1,27 +1,5 @@
 import boto3
 
-# Function to remove from ELB v1
-def elb1(instance_id, elb_name): 
-    try:
-        client = boto3.client('elb')
-    except Exception as e:
-        print(f'Exception occurred when creating auto-scaling client: {e}')
-
-    try:
-        response = client.deregister_instances_from_load_balancer(
-        LoadBalancerName = elb_name,
-        Instances=[
-            {
-                'InstanceId': instance_id 
-            }
-        ])
-        if 'Instances' in response.keys() and response['Instances']!= []:
-            print(f'Successfully deregistered instance: {instance_id}')
-            return
-        else:
-            print(f'Deregistration failed for instance: {instance_id} from ELB v1')
-    except Exception as e:
-        print(f'Exception occurred when deregistering instance: {e}')
 
 # Function to remove from ELB v2
 def elb2(instance_id, target_group_arn):
@@ -40,13 +18,12 @@ def elb2(instance_id, target_group_arn):
                 }
                 ]
             )
-        print(f'Successfully deregistered instance: {instance_id}')
+        print(f'Successfully deregistered instance: {instance_id} from ELB v2')
     except Exception as e:
-        print(f'Exception occurred when deregistering instance: {e}')
+        print(f'Exception occurred when deregistering instance from elbv2: {e}')
 
 if __name__ == '__main__':
-    instance_id = ''
-    elb_name = ''
-    target_group_arn = ''
-    elb1(instance_id, elb_name)
+    instance_id = 'i-0b2f164b1f525e017'
+    elb_name = 'test-elb-1'
+    target_group_arn = 'arn:aws:elasticloadbalancing:ap-south-1:961341555743:targetgroup/test-tg/cf8a311eeede17b1'
     elb2(instance_id, target_group_arn)
