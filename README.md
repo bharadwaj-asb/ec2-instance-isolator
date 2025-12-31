@@ -1,6 +1,6 @@
 ## EC2 Instance Isolator
 
-An automated, security-first incident response workflow that isolates compromised Amazon EC2 instances, prevents evidence destruction, and preserves forensic artifacts, aligned with AWS incident response best practices.
+An automated incident response workflow that isolates compromised Amazon EC2 instances, prevents evidence destruction, and preserves forensic artifacts, aligned with AWS incident response best practices.
 
 This project focuses on containment and forensic preservation, not remediation, ensuring compromised workloads are safely quarantined for investigation without interference from Auto Scaling or load-balancing mechanisms.
 
