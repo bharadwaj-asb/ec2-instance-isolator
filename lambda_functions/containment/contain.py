@@ -53,6 +53,6 @@ def main(instance_id,sg_id):
         print(f'Exception occurred when creating security group for the instance: {instance_id} \n {e}')
 
 if __name__ == '__main__':
-    instance_id = 'i-0dcec6dd704b008d3'
+    instance_id = 'i-0485bd939bfd72eea'
     sg_id = []
     main(instance_id,sg_id)

@@ -17,9 +17,10 @@ def main(instance_id):
                     },
                     {
                         'Key': 'QuarantineTime',
-                        'Value': datetime.now()
+                        'Value': str(datetime.now())
                     }
             ])
+        print(response)
     except Exception as e:
         print(f'Exception occurred when tagging the instance: {instance_id} \n {e}')
 
@@ -27,5 +28,5 @@ def main(instance_id):
 
 
 if __name__ == '__main__':
-    instance_id = ''
+    instance_id = 'i-01a9e1bfa13067635'
     main(instance_id)

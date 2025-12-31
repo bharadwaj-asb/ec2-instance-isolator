@@ -20,6 +20,6 @@ def main(instance_id, asg_name):
 
 
 if __name__ == '__main__':
-    instance_id = ''
-    asg_name = ''
+    instance_id = 'i-0485bd939bfd72eea'
+    asg_name = 'test-asg'
     main(instance_id, asg_name)
