@@ -5,35 +5,6 @@ import logging
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-logger.info({
-    "step": "discover_target_groups",
-    "instance_id": instance_id,
-    "incident_id": incident_id
-    "target_group_arn": tg_arn,
-    "message": "Instance found in target group"
-})
-logger.info({
-    "step": "deregister_target"
-    "incident_id": incident_id,
-    "instance_id": instance_id,
-    "target_group_arn": tg_arn,
-    "action": "deregister",
-    "status": "initiated"
-})
-logger.info({
-    "step": "discover_target_groups",
-    "incident_id": incident_id
-    "instance_id": instance_id,
-    "message": "Instance not registered in any target groups"
-})
-return {
-    "instance_id": instance_id,
-    "incident_id": incident_id
-    "step": "deregister_elb",
-    "classic_elbs": classic_elbs,
-    "target_groups": affected_target_groups,
-    "timestamp": datetime.utcnow().isoformat() + "Z"
-}
 
 try:
     client = boto3.client('ec2')
@@ -209,6 +180,15 @@ def get_asg_names(instance_id):
             })
     try:
         response = client.describe_auto_scaling_instances(InstanceIds=[instance_id])
+        logger.info(
+        {
+            "step": "capture_ec2_md",
+            "function": "get_asg_names",
+            "instance_id": instance_id,
+            "incident_id": incident_id,
+            "message": f"Successfully captured auto scaling information."
+            })
+
         return [x['AutoScalingGroupName'] for x in response['AutoScalingInstances']]
     except Exception as e:
         logger.exception({
@@ -229,6 +209,14 @@ def get_ebs_vols(instance_id):
     #    rint(f'Exception occurred when creating EC2 client: {e}')
     try:
         response = client.describe_instances(InstanceIds=[instance_id])
+        logger.info(
+        {
+            "step": "capture_ec2_md",
+            "function": "get_ebs_vols",
+            "instance_id": instance_id,
+            "incident_id": incident_id,
+            "message": f"Successfully captured EBS volume information."
+            })
         return [x['Ebs']['VolumeId'] for x in response['Reservations'][0]['Instances'][0]['BlockDeviceMappings']]
     except Exception as e:
         logger.exception({
@@ -256,6 +244,15 @@ def get_target_groups_for_instance(instance_id):
     
     try:
         response = client.describe_target_groups(PageSize=400)
+        logger.info(
+        {
+            "step": "capture_ec2_md",
+            "function": "get_target_groups_for_instance",
+            "instance_id": instance_id,
+            "incident_id": incident_id,
+            "message": f"Successfully captured target groups information."
+            })
+
     except Exception as e:
         logger.exception({
                 "incident_id": incident_id,
@@ -280,6 +277,14 @@ def get_target_groups_for_instance(instance_id):
                 if thd["Target"]["Id"] == instance_id: # Instance is registered in this target group
                     target_group_arns.append(target_group_arn)
                     elb_arns.append(each_tgrp['LoadBalancerArns'][0])
+            logger.info(
+            {
+                "step": "capture_ec2_md",
+                "function": "get_target_groups_for_instance",
+                "instance_id": instance_id,
+                "incident_id": incident_id,
+                "message": f"Successfully captured target group health information."
+                })
         except Exception as e:
             logger.exception({
                     "incident_id": incident_id,
@@ -308,6 +313,14 @@ def get_load_balancers_for_target_groups(elb_arns):
         response = client.describe_load_balancers(LoadBalancerArns=elb_arns)
         for lb in response['LoadBalancers']:
             names.append(lb['LoadBalancerName'])
+        logger.info(
+        {
+            "step": "capture_ec2_md",
+            "function": "get_load_balancers_for_target_groups",
+            "instance_id": instance_id,
+            "incident_id": incident_id,
+            "message": f"Successfully captured ELB names information."
+            })
         return names
     except Exception as e:
             logger.exception({
@@ -346,4 +359,14 @@ if __name__ == "__main__":
         )
     s3_key = (f"{account_id}/{s3_region}/{incident_id}/execution/metadata.json")
     upload_to_s3(json_body,s3_key)
+
+    # Return value for step functions
+    return_value= { 
+    "instance_id": instance_id,
+    "incident_id": incident_id,
+    "step": "capture_ec2_md",
+    "target_groups": affected_target_groups,
+    "timestamp": datetime.now().isoformat() + "Z"
+}
+
 
