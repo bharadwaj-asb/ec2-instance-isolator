@@ -1,11 +1,51 @@
 import boto3
 import json
 from datetime import datetime
+import logging
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+logger.info({
+    "step": "discover_target_groups",
+    "instance_id": instance_id,
+    "incident_id": incident_id
+    "target_group_arn": tg_arn,
+    "message": "Instance found in target group"
+})
+logger.info({
+    "step": "deregister_target"
+    "incident_id": incident_id,
+    "instance_id": instance_id,
+    "target_group_arn": tg_arn,
+    "action": "deregister",
+    "status": "initiated"
+})
+logger.info({
+    "step": "discover_target_groups",
+    "incident_id": incident_id
+    "instance_id": instance_id,
+    "message": "Instance not registered in any target groups"
+})
+return {
+    "instance_id": instance_id,
+    "incident_id": incident_id
+    "step": "deregister_elb",
+    "classic_elbs": classic_elbs,
+    "target_groups": affected_target_groups,
+    "timestamp": datetime.utcnow().isoformat() + "Z"
+}
 
 try:
     client = boto3.client('ec2')
 except Exception as e:
-    print(f'Exception occurred when creating EC2 client: {e}')
+    logger.exception({
+        "incident_id": incident_id,
+        "step": "capture_ec2_metadata",
+        "instance_id": instance_id,
+        "error": str(e)
+    })
+    raise
+    #rint(f'Exception occurred when creating EC2 client: {e}')
 
 # Function for checking is the provided instance is already quarantined.
 def is_quarantined(instance_id):
@@ -21,10 +61,21 @@ def is_quarantined(instance_id):
             for each_tag in tag_values: # Checking if instance is already quarantined.
                 if each_tag['IncidentStatus']!=None and each_tag['IncidentStatus'] == 'Quarantined' and each_tag['QuarantineTime']:
                     return True
+                
         except KeyError as k:
-            print(f'Exception occurred {k} Key not found')
+            logger.exception({
+                "incident_id": incident_id,
+                "step": "capture_ec2_metadata",
+                "instance_id": instance_id,
+                "error": str(k)
+                })
         except Exception as e:
-            print(f'Exception occurred {e}')
+            logger.exception({
+                "incident_id": incident_id,
+                "step": "capture_ec2_metadata",
+                "instance_id": instance_id,
+                "error": str(e)
+                })
         return False
 
 
@@ -36,11 +87,16 @@ def json_serializer(obj):
 
 # Function to upload evidence file to S3 bucket
 def upload_to_s3(body,key):
-    bucket_name = '' # Hardcoding the dedicated bucket name for IR evidence
+    bucket_name = 'test-bucket-96655' # Hardcoding the dedicated bucket name for IR evidence
     try:
         client = boto3.client('s3')
     except Exception as e:
-        print(f'Error occurred when creating s3 client: {e}')
+            logger.exception({
+                "incident_id": incident_id,
+                "step": "create_s3_client",
+                "bucket_name": bucket_name,
+                "error": str(e)
+                })
     try:
         response = client.put_object(
             Bucket=bucket_name,
@@ -52,66 +108,136 @@ def upload_to_s3(body,key):
             #ObjectLockRetainUntilDate=retain_until,
             ContentType="application/json"
         )
+        logger.info(
+             {
+                  "step": "capture_ec2_md",
+                  "bucket_name": bucket_name,
+                  "incident_id": incident_id,
+                  "message": f"Uploaded {key} to S3 bucket"
+        })
+
     except Exception as e:
-        print(f'Error occurred when putting object {key} to S3 bucket {bucket_name}: {e}')
+                    logger.exception({
+                    "incident_id": incident_id,
+                    "step": "upload_to_s3_bucket",
+                    "s3_object_key": key,
+                    "error": str(e)
+                    })
+
 
 
 
 def main(instance_id,s3_region,account_id,incident_id):
 
-    if is_quarantined(instance_id):
-        return 
-
+    # If the instance is already quarantined
+    if is_quarantined(instance_id): 
+        return  # Move to next step or stop the entire flow using step functions
+    
+    basic_md = {}
     # Getting instance data
     try:
         response = client.describe_instances(InstanceIds=[instance_id])
-        if 'Instances' not in response.keys():
-            print(f'No instance found with Instance ID: {instance_id}')
+        if 'Instances' not in response['Reservations'][0].keys():
+            logger.error({
+                "incident_id": incident_id,
+                "step": "capture_ec2_instance",
+                "function": "describe_instances",
+                "instance_id": instance_id,
+                "message": f"Instance {instance_id} cannot be found"
+                })
             return 
-        print(response) # Convert to JSON file
-        json_body = json.dumps(
-            response,
-            default=json_serializer,
-            indent=2
-        )
-        s3_key = (f"{account_id}/{s3_region}/{incident_id}/execution/detach_asg.json")
-        upload_to_s3(json_body,s3_key)
-        # Send security group IDs to step functions output
+        basic_md['SecurityGroups'] = response['Reservations'][0]['Instances'][0]['NetworkInterfaces'][0]['Groups'] # Returns list conatining dict
+        # send security group IDs to step function outputs
+        basic_md['IpDetails'] = response['Reservations'][0]['Instances'][0]['NetworkInterfaces'][0]['PrivateIpAddresses']
+        basic_md['TagData'] = response['Reservations'][0]['Instances'][0]['Tags']
+        logger.info(
+        {
+            "step": "capture_ec2_md",
+            "function": "main",
+            "instance_id": instance_id,
+            "incident_id": incident_id,
+            "message": f"Successfully captured EC2 instance basic metadata"
+            })
+
+        return basic_md
+
     except Exception as e:
-        print(f'Exception occurred when fetching metadata using instance-id:{instance_id} \n {e}')
+        logger.exception({
+                "incident_id": incident_id,
+                "step": "capture_ec2_instance",
+                "function": "describe_instances",
+                "instance_id": instance_id,
+                "error":str(e)
+            })
+
 
 # Function to fetch associated EC2 instance profiles
 def get_instance_profiles(instance_id):
     try:
         response_for_instance_profile = client.describe_iam_instance_profile_associations(Filters=[{'Name':'instance-id','Values':[instance_id]}])
+        logger.info(
+        {
+            "step": "capture_ec2_md",
+            "function": "get_instance_profiles",
+            "instance_id": instance_id,
+            "incident_id": incident_id,
+            "message": f"Successfully captured EC2 instance basic metadata"
+            })
+
         return response_for_instance_profile['IamInstanceProfileAssociations'] 
     except Exception as e:
-        print(f'Exception occurred when fetching IAM role using instance-id: {e}')
+        logger.exception({
+                "incident_id": incident_id,
+                "step": "capture_ec2_instance",
+                "function": "get_instance_profile",
+                "instance_id": instance_id,
+                "error": "Exception when fetching EC2 instance profiles: "+str(e)
+            })
+
 
 # Function to get associated ASG names
 def get_asg_names(instance_id):
     try:
         client = boto3.client('autoscaling')
     except Exception as e:
-        print(f'Exception occurred when creating autoscaling client: {e}')
+        logger.exception({
+                "incident_id": incident_id,
+                "step": "capture_ec2_instance",
+                "function": "get_asg_names",
+                "instance_id": instance_id,
+                "error": "Exception when creating autoscaling client: "+str(e)
+            })
     try:
         response = client.describe_auto_scaling_instances(InstanceIds=[instance_id])
         return [x['AutoScalingGroupName'] for x in response['AutoScalingInstances']]
     except Exception as e:
-        print(f'Exception occurred when fetching autoscaling group names: {e}')
+        logger.exception({
+                "incident_id": incident_id,
+                "step": "capture_ec2_instance",
+                "function": "get_asg_names",
+                "instance_id": instance_id,
+                "error": "Exception when describing autoscaling instances: "+str(e)
+            })
+
 
     
 # Function to fetch associated EBS volumes
 def get_ebs_vols(instance_id):
-    try:
-        client = boto3.client('ec2')
-    except Exception as e:
-        print(f'Exception occurred when creating EC2 client: {e}')
+    #try:
+    #   client = boto3.client('ec2')
+    #except Exception as e:
+    #    rint(f'Exception occurred when creating EC2 client: {e}')
     try:
         response = client.describe_instances(InstanceIds=[instance_id])
         return [x['Ebs']['VolumeId'] for x in response['Reservations'][0]['Instances'][0]['BlockDeviceMappings']]
     except Exception as e:
-        print(f'Exception occurred when fetching volume IDs for the EC2 instance: {e}')
+        logger.exception({
+                "incident_id": incident_id,
+                "step": "capture_ec2_instance",
+                "function": "get_ebs_vols",
+                "instance_id": instance_id,
+                "error": "Exception when fetching EBS volume IDs for instance: "+str(e)
+            })
 
 # Get associated ELB target groups and elb name
 def get_target_groups_for_instance(instance_id):
@@ -120,12 +246,24 @@ def get_target_groups_for_instance(instance_id):
     try:
         client = boto3.client('elbv2')
     except Exception as e:
-        print(f'Exception occurred when creating ELBv2 client: {e}')
+        logger.exception({
+                "incident_id": incident_id,
+                "step": "capture_ec2_instance",
+                "function": "get_asg_names",
+                "instance_id": instance_id,
+                "error": "Exception when creating ELBv2 client: "+str(e)
+            })
     
     try:
         response = client.describe_target_groups(PageSize=400)
     except Exception as e:
-        print(f'Exception occurred when describing ELB target groups: {e}')
+        logger.exception({
+                "incident_id": incident_id,
+                "step": "capture_ec2_instance",
+                "function": "get_target_groups_for_instance",
+                "instance_id": instance_id,
+                "error": "Exception when fetching ELB target groups for instance: "+str(e)
+            })
 
     for each_tgrp in response['TargetGroups']:
         target_group_arn = each_tgrp['TargetGroupArn']
@@ -143,7 +281,13 @@ def get_target_groups_for_instance(instance_id):
                     target_group_arns.append(target_group_arn)
                     elb_arns.append(each_tgrp['LoadBalancerArns'][0])
         except Exception as e:
-            print(f'Exception occurred when describing ELB target group health: {e}')
+            logger.exception({
+                    "incident_id": incident_id,
+                    "step": "capture_ec2_instance",
+                    "function": "get_target_groups_for_instance",
+                    "instance_id": instance_id,
+                    "error": "Exception when fetching target group health for instance: "+str(e)
+                })
     return {'TargetGroupArns':target_group_arns,'ELBArns':elb_arns}
 
 # Function to fetch ELB names
@@ -152,7 +296,13 @@ def get_load_balancers_for_target_groups(elb_arns):
     try:
         client = boto3.client('elbv2')
     except Exception as e:
-        print(f'Exception occurred when creating ELBv2 client: {e}')
+        logger.exception({
+                "incident_id": incident_id,
+                "step": "capture_ec2_instance",
+                "function": "get_asg_names",
+                "instance_id": instance_id,
+                "error": "Exception when creating ELBv2 client: "+str(e)
+            })
 
     try:
         response = client.describe_load_balancers(LoadBalancerArns=elb_arns)
@@ -160,7 +310,13 @@ def get_load_balancers_for_target_groups(elb_arns):
             names.append(lb['LoadBalancerName'])
         return names
     except Exception as e:
-        print(f'Exception occurred when describing Load Balancers: {e}')
+            logger.exception({
+                    "incident_id": incident_id,
+                    "step": "capture_ec2_instance",
+                    "function": "get_load_balancers_for_target_groups",
+                    "instance_id": instance_id,
+                    "error": "Exception when fetching ELB info for instance: "+str(e)
+                })
 
 
 # Lambda handler function
@@ -169,10 +325,25 @@ if __name__ == "__main__":
     s3_region = 'ap-south-1'
     account_id = ''
     incident_id = ''
-    main(instance_id,s3_region,account_id,incident_id)
+    basic_ec2_md = main(instance_id,s3_region,account_id,incident_id)
     instance_profile = get_instance_profiles(instance_id) # Add to S3 bucket
     asg_names = get_asg_names(instance_id) # Add to S3 bucket and step function output
     ebs_vols = get_ebs_vols(instance_id) # Add to S3 bucket and step function output
     tgrps = get_target_groups_for_instance(instance_id) # Add to S3 bucket and step function output
     elb_names = get_load_balancers_for_target_groups(tgrps['ELBArns']) # Add to S3 bucket and step function output
+    final_md = {
+        'BasicMetadata': basic_ec2_md,
+        'InstanceProfiles': instance_profile,
+        'ASGNames': asg_names,
+        'EBSVolumes': ebs_vols,
+        'TargetGroups': tgrps,
+        'ELBNames': elb_names
+    }
+    json_body = json.dumps(
+            final_md,
+            default=json_serializer,
+            indent=2
+        )
+    s3_key = (f"{account_id}/{s3_region}/{incident_id}/execution/metadata.json")
+    upload_to_s3(json_body,s3_key)
 
