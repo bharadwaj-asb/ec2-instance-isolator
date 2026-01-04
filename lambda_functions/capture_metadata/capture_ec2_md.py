@@ -56,46 +56,6 @@ def json_serializer(obj):
         return obj.isoformat()
     return str(obj)
 
-# Function to upload evidence file to S3 bucket
-def upload_to_s3(body,key):
-    bucket_name = 'test-bucket-96655' # Hardcoding the dedicated bucket name for IR evidence
-    try:
-        client = boto3.client('s3')
-    except Exception as e:
-            logger.exception({
-                "incident_id": incident_id,
-                "step": "create_s3_client",
-                "bucket_name": bucket_name,
-                "error": str(e)
-                })
-    try:
-        response = client.put_object(
-            Bucket=bucket_name,
-            Key=key,
-            Body=body.encode("utf-8"),
-            #ServerSideEncryption="aws:kms",
-            #SSEKMSKeyId=kms_key, 
-            #ObjectLockMode="GOVERNANCE",
-            #ObjectLockRetainUntilDate=retain_until,
-            ContentType="application/json"
-        )
-        logger.info(
-             {
-                  "step": "capture_ec2_md",
-                  "bucket_name": bucket_name,
-                  "incident_id": incident_id,
-                  "message": f"Uploaded {key} to S3 bucket"
-        })
-
-    except Exception as e:
-                    logger.exception({
-                    "incident_id": incident_id,
-                    "step": "upload_to_s3_bucket",
-                    "s3_object_key": key,
-                    "error": str(e)
-                    })
-
-
 
 
 def main(instance_id,s3_region,account_id,incident_id):
@@ -143,7 +103,7 @@ def main(instance_id,s3_region,account_id,incident_id):
 
 
 # Function to fetch associated EC2 instance profiles
-def get_instance_profiles(instance_id):
+def get_instance_profiles(instance_id,incident_id):
     try:
         response_for_instance_profile = client.describe_iam_instance_profile_associations(Filters=[{'Name':'instance-id','Values':[instance_id]}])
         logger.info(
@@ -167,7 +127,7 @@ def get_instance_profiles(instance_id):
 
 
 # Function to get associated ASG names
-def get_asg_names(instance_id):
+def get_asg_names(instance_id,incident_id):
     try:
         client = boto3.client('autoscaling')
     except Exception as e:
@@ -202,7 +162,7 @@ def get_asg_names(instance_id):
 
     
 # Function to fetch associated EBS volumes
-def get_ebs_vols(instance_id):
+def get_ebs_vols(instance_id,incident_id):
     #try:
     #   client = boto3.client('ec2')
     #except Exception as e:
@@ -228,7 +188,7 @@ def get_ebs_vols(instance_id):
             })
 
 # Get associated ELB target groups and elb name
-def get_target_groups_for_instance(instance_id):
+def get_target_groups_for_instance(instance_id,incident_id):
     target_group_arns = []
     elb_arns = []
     try:
@@ -296,7 +256,7 @@ def get_target_groups_for_instance(instance_id):
     return {'TargetGroupArns':target_group_arns,'ELBArns':elb_arns}
 
 # Function to fetch ELB names
-def get_load_balancers_for_target_groups(elb_arns):
+def get_load_balancers_for_target_groups(elb_arns,instance_id,incident_id):
     names = []
     try:
         client = boto3.client('elbv2')
@@ -331,42 +291,82 @@ def get_load_balancers_for_target_groups(elb_arns):
                     "error": "Exception when fetching ELB info for instance: "+str(e)
                 })
 
+# Function to upload evidence file to S3 bucket
+def upload_to_s3(body,key,instance_id,incident_id):
+    bucket_name = 'test-bucket-96655' # Hardcoding the dedicated bucket name for IR evidence
+    try:
+        client = boto3.client('s3')
+    except Exception as e:
+            logger.exception({
+                "incident_id": incident_id,
+                "step": "create_s3_client",
+                "bucket_name": bucket_name,
+                "error": str(e)
+                })
+    try:
+        response = client.put_object(
+            Bucket=bucket_name,
+            Key=key,
+            Body=body.encode("utf-8"),
+            #ServerSideEncryption="aws:kms",
+            #SSEKMSKeyId=kms_key, 
+            #ObjectLockMode="GOVERNANCE",
+            #ObjectLockRetainUntilDate=retain_until,
+            ContentType="application/json"
+        )
+        logger.info(
+             {
+                  "step": "capture_ec2_md",
+                  "bucket_name": bucket_name,
+                  "incident_id": incident_id,
+                  "message": f"Uploaded {key} to S3 bucket"
+        })
+
+    except Exception as e:
+                    logger.exception({
+                    "incident_id": incident_id,
+                    "step": "upload_to_s3_bucket",
+                    "s3_object_key": key,
+                    "error": str(e)
+                    })
+
+
 
 # Lambda handler function
-if __name__ == "__main__":
-    instance_id = 'i-0299e660d99907b1d'
-    s3_region = 'ap-south-1'
-    account_id = ''
-    incident_id = ''
-    basic_ec2_md = main(instance_id,s3_region,account_id,incident_id)
-    instance_profile = get_instance_profiles(instance_id) # Add to S3 bucket
-    asg_names = get_asg_names(instance_id) # Add to S3 bucket and step function output
-    ebs_vols = get_ebs_vols(instance_id) # Add to S3 bucket and step function output
-    tgrps = get_target_groups_for_instance(instance_id) # Add to S3 bucket and step function output
-    elb_names = get_load_balancers_for_target_groups(tgrps['ELBArns']) # Add to S3 bucket and step function output
-    final_md = {
-        'BasicMetadata': basic_ec2_md,
-        'InstanceProfiles': instance_profile,
-        'ASGNames': asg_names,
-        'EBSVolumes': ebs_vols,
-        'TargetGroups': tgrps,
-        'ELBNames': elb_names
-    }
-    json_body = json.dumps(
-            final_md,
-            default=json_serializer,
-            indent=2
-        )
-    s3_key = (f"{account_id}/{s3_region}/{incident_id}/execution/metadata.json")
-    upload_to_s3(json_body,s3_key)
 
-    # Return value for step functions
-    return_value= { 
-    "instance_id": instance_id,
-    "incident_id": incident_id,
-    "step": "capture_ec2_md",
-    "target_groups": affected_target_groups,
-    "timestamp": datetime.now().isoformat() + "Z"
+instance_id = 'i-0299e660d99907b1d'
+s3_region = 'ap-south-1'
+account_id = ''
+incident_id = ''
+basic_ec2_md = main(instance_id,s3_region,account_id,incident_id)
+instance_profile = get_instance_profiles(instance_id,incident_id) # Add to S3 bucket
+asg_names = get_asg_names(instance_id,incident_id) # Add to S3 bucket and step function output
+ebs_vols = get_ebs_vols(instance_id,incident_id) # Add to S3 bucket and step function output
+tgrps = get_target_groups_for_instance(instance_id,incident_id) # Add to S3 bucket and step function output
+elb_names = get_load_balancers_for_target_groups(tgrps['ELBArns'],instance_id,incident_id) # Add to S3 bucket and step function output
+final_md = {
+    'BasicMetadata': basic_ec2_md,
+    'InstanceProfiles': instance_profile,
+    'ASGNames': asg_names,
+    'EBSVolumes': ebs_vols,
+    'TargetGroups': tgrps,
+    'ELBNames': elb_names
+}
+json_body = json.dumps(
+        final_md,
+        default=json_serializer,
+        indent=2
+    )
+s3_key = (f"{account_id}/{s3_region}/{incident_id}/execution/metadata.json")
+upload_to_s3(json_body,s3_key,instance_id,incident_id)
+
+# Return value for step functions
+return_value= { 
+"instance_id": instance_id,
+"incident_id": incident_id,
+"step": "capture_ec2_md",
+"target_groups": affected_target_groups,
+"timestamp": datetime.now().isoformat() + "Z"
 }
 
 
