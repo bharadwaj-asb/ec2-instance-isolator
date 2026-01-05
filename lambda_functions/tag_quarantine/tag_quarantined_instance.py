@@ -1,12 +1,24 @@
 import boto3
 from datetime import datetime
+import json
+import logging
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 try:
     client = boto3.client('ec2')
 except Exception as e:
-    print(f'Exception occurred when creating EC2 client: {e}')
+    logger.exception({
+        "incident_id": incident_id,
+        "step": "ebs_snapshots",
+        "instance_id": instance_id,
+        "message":"Exception occurred when creating EC2 client.",
+        "error": str(e)
+    })
+    raise
 
-def main(instance_id):
+def main(instance_id,incident_id):
     try:
         response = client.create_tags(
             Resources=[instance_id],
@@ -18,15 +30,35 @@ def main(instance_id):
                     {
                         'Key': 'QuarantineTime',
                         'Value': str(datetime.now())
+                    },
+                    {
+                        'Key': 'IncidentId',
+                        'Value': incident_id
                     }
+
             ])
-        print(response)
+        logger.info(
+            {
+            "step": "tag_quarantined_instance",
+            "function": "main",
+            "instance_id": instance_id,
+            "incident_id": incident_id,
+            "message": f"Successfully added tags for quarantined instance"
+            })
+
     except Exception as e:
-        print(f'Exception occurred when tagging the instance: {instance_id} \n {e}')
+        logger.exception({
+        "incident_id": incident_id,
+        "step": "tag_quarantined_instance",
+        "instance_id": instance_id,
+        "message":"Exception occurred when tagging the instance.",
+        "error": str(e)
+    })
+
 
     
 
 
-if __name__ == '__main__':
-    instance_id = 'i-01a9e1bfa13067635'
-    main(instance_id)
+instance_id = 'i-01a9e1bfa13067635'
+incident_id=''
+main(instance_id,incident_id)
