@@ -43,6 +43,8 @@ def main(vols,instance_id,incident_id):
                     ]
                     ) 
                 print(response)
+            # Put each of these snapshots in an S3 bucket
+
                 if 'SnapshotId' in response.keys() and response['SnapshotId']!='':
                      logger.info(
                           {
@@ -63,7 +65,6 @@ def main(vols,instance_id,incident_id):
                             })
                     
 
-            # Put each of these snapshots in an S3 bucket
             except Exception as e:
                 logger.exception({
                     "incident_id": incident_id,
