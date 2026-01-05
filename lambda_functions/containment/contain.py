@@ -73,6 +73,7 @@ def main(instance_id,sg_id,incident_id):
         "incident_id": incident_id,
         "step": "containment",
         "instance_id": instance_id,
+        "message": "Error occurred when trying to contain the EC2 instance",
         "error": str(e)
     })
 
