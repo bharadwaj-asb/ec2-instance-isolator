@@ -13,10 +13,10 @@ except Exception as e:
         "incident_id": incident_id,
         "step": "capture_ec2_metadata",
         "instance_id": instance_id,
+        "message":"Exception occurred when creating EC2 client",
         "error": str(e)
     })
     raise
-    #rint(f'Exception occurred when creating EC2 client: {e}')
 
 # Function for checking is the provided instance is already quarantined.
 def is_quarantined(instance_id):
@@ -98,6 +98,7 @@ def main(instance_id,s3_region,account_id,incident_id):
                 "step": "capture_ec2_instance",
                 "function": "describe_instances",
                 "instance_id": instance_id,
+                "message":"Error occurred when describling EC2 instances using the instance-id",
                 "error":str(e)
             })
 
