@@ -1,11 +1,23 @@
 import boto3
+import json
+from datetime import datetime
+import logging
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 try:
     client = boto3.client('ec2')
 except Exception as e:
-    print(f'Exception occurred when creating EC2 or security group client(s): {e}')
+    logger.exception({
+        "incident_id": incident_id,
+        "step": "containment",
+        "instance_id": instance_id,
+        "error": str(e)
+    })
+    raise
 
-def main(instance_id,sg_id):
+def main(instance_id,sg_id,incident_id):
     try:
         # Block for creating security group
         r1 = client.create_security_group(
@@ -48,11 +60,24 @@ def main(instance_id,sg_id):
             InstanceId=instance_id,
             Groups=[group_id]
             )
-        print(response) # To be removed
+        logger.info(
+        {
+            "step": "containment",
+            "function": "main",
+            "instance_id": instance_id,
+            "incident_id": incident_id,
+            "message": f"Successfully modified security groups and contained the instance."
+            })
     except Exception as e:
-        print(f'Exception occurred when creating security group for the instance: {instance_id} \n {e}')
+        logger.exception({
+        "incident_id": incident_id,
+        "step": "containment",
+        "instance_id": instance_id,
+        "error": str(e)
+    })
 
-if __name__ == '__main__':
-    instance_id = 'i-0485bd939bfd72eea'
-    sg_id = []
-    main(instance_id,sg_id)
+#if __name__ == '__main__':
+instance_id = 'i-0485bd939bfd72eea'
+sg_id = []
+incident_id = ''
+main(instance_id,sg_id,incident_id)
