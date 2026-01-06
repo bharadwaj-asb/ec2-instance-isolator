@@ -1,33 +1,64 @@
 {
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Sid": "WriteOnly",
-            "Effect": "Allow",
-            "Action": [
-                "ec2:RevokeSecurityGroupIngress",
-                "ec2:DeleteTags",
-                "ec2:CreateSecurityGroup",
-                "ec2:CreateTags",
-                "ec2:RevokeSecurityGroupEgress",
-                "ec2:CreateSnapshot",
-                "ec2:ModifyInstanceAttribute",
-                "autoscaling:DetachInstances",
-                "elasticloadbalancing:DeregisterInstancesFromLoadBalancer",
-                "elasticloadbalancing:DeregisterTargets"
-            ],
-            "Resource": "arn:aws:ec2:*:*:instance/*"
-        },
-        {
-            "Sid": "ReadOnly",
-            "Effect": "Allow",
-            "Action": [
-                "ec2:DescribeInstances",
-                "ec2:DescribeSecurityGroupRules",
-                "ec2:DescribeTags",
-                "ec2:DescribeSecurityGroups"
-            ],
-            "Resource": "*"
-        }
-    ]
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Sid": "EC2",
+			"Effect": "Allow",
+			"Action": [
+			     "ec2:DescribeInstances",
+			     "ec2:DescribeSecurityGroupRules",
+			     "ec2:DescribeTags",
+			     "ec2:DescribeSecurityGroups",
+				"ec2:RevokeSecurityGroupIngress",
+				"ec2:DeleteTags",
+				"ec2:CreateSecurityGroup",
+				"ec2:CreateTags",
+				"ec2:RevokeSecurityGroupEgress",
+				"ec2:CreateSnapshot",
+				"ec2:ModifyInstanceAttribute"
+			
+			],
+			"Resource": [
+				"arn:aws:ec2:*:*:instance/*"
+			]
+		},
+		{
+			"Sid": "S3",
+			"Effect": "Allow",
+			"Action": [
+				"s3:ListBucket",
+				"s3:PutObject*",
+				"s3:GetObjectVersion"
+			],
+			"Resource": [
+				"arn:aws:s3:::bucket-name",
+				"arn:aws:s3:::bucket-name/*"
+			]
+		},
+		{
+			"Sid": "CWLogs",
+			"Effect": "Allow",
+			"Action": [
+				"logs:DescribeLogStreams",
+				"logs:DescribeLogGroups",
+				"logs:CreateLogGroup",
+				"logs:CreateLogDelivery",
+				"logs:CreateLogStream"
+			],
+			"Resource": "arn:aws:logs:*:*:log-group:*:*"
+		},
+		{
+			"Sid": "ELBandASG",
+			"Effect": "Allow",
+			"Action": [
+			    	"autoscaling:DetachInstances",
+				"elasticloadbalancing:DeregisterInstancesFromLoadBalancer",
+				"elasticloadbalancing:DeregisterTargets"
+				],
+			"Resource": [
+			    "arn:aws:elasticloadbalancing:*:*:loadbalancer/*",
+			    "arn:aws:autoscaling:*:*:autoScalingGroup:*:autoScalingGroup:*"
+			    ]
+		}
+	]
 }
