@@ -43,7 +43,8 @@
 				"logs:DescribeLogGroups",
 				"logs:CreateLogGroup",
 				"logs:CreateLogDelivery",
-				"logs:CreateLogStream"
+				"logs:CreateLogStream",
+                "logs:PutLogEvents"
 			],
 			"Resource": "arn:aws:logs:*:*:log-group:*:*"
 		},
