@@ -300,7 +300,8 @@ def upload_to_s3(body,key,instance_id,incident_id):
     except Exception as e:
             logger.exception({
                 "incident_id": incident_id,
-                "step": "create_s3_client",
+                "step": "capture_ec2_md",
+                "function": "upload_to_s3",
                 "bucket_name": bucket_name,
                 "error": str(e)
                 })
@@ -318,6 +319,7 @@ def upload_to_s3(body,key,instance_id,incident_id):
         logger.info(
              {
                   "step": "capture_ec2_md",
+                  "function": "upload_to_s3",
                   "bucket_name": bucket_name,
                   "incident_id": incident_id,
                   "message": f"Uploaded {key} to S3 bucket"
@@ -326,7 +328,8 @@ def upload_to_s3(body,key,instance_id,incident_id):
     except Exception as e:
                     logger.exception({
                     "incident_id": incident_id,
-                    "step": "upload_to_s3_bucket",
+                    "step": "capture_ec2_md",
+                    "function": "upload_to_s3_bucket",
                     "s3_object_key": key,
                     "error": str(e)
                     })
@@ -358,7 +361,7 @@ json_body = json.dumps(
         default=json_serializer,
         indent=2
     )
-s3_key = (f"{account_id}/{s3_region}/{incident_id}/execution/metadata.json")
+s3_key = (f"{account_id}/{s3_region}/{incident_id}/instance/metadata.json")
 upload_to_s3(json_body,s3_key,instance_id,incident_id)
 
 # Return value for step functions
