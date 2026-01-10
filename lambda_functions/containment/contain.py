@@ -6,18 +6,8 @@ import logging
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-try:
-    client = boto3.client('ec2')
-except Exception as e:
-    logger.exception({
-        "incident_id": incident_id,
-        "step": "containment",
-        "instance_id": instance_id,
-        "error": str(e)
-    })
-    raise
 
-def main(instance_id,sg_id,incident_id):
+def main(client,instance_id,sg_id,incident_id):
     try:
         # Block for creating security group
         r1 = client.create_security_group(
@@ -78,7 +68,24 @@ def main(instance_id,sg_id,incident_id):
     })
 
 #if __name__ == '__main__':
-instance_id = 'i-0485bd939bfd72eea'
-sg_id = []
-incident_id = ''
-main(instance_id,sg_id,incident_id)
+
+def lambda_handler(event, context):
+    instance_id = event['InstanceId']
+    sg_id = event['SecurityGroups']
+    incident_id = event['IncidentId']
+    try:
+        client = boto3.client('ec2')
+    except Exception as e:
+        logger.exception({
+        "incident_id": incident_id,
+        "step": "containment",
+        "instance_id": instance_id,
+        "error": str(e)
+    })
+        raise
+
+    main(client,instance_id,sg_id,incident_id)
+    return {
+        'statusCode': 200,
+        'body': json.dumps('Successfully isolated the instance')
+    }
