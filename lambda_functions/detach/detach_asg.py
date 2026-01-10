@@ -9,7 +9,14 @@ logger.setLevel(logging.INFO)
 try:
     client = boto3.client('autoscaling')
 except Exception as e:
-    print(f'Exception occurred when creating auto-scaling client: {e}')
+    logger.exception({
+                "incident_id": incident_id,
+                "step": "detach_asg",
+                "function": "main",
+                "instance_id": instance_id,
+                "message":"Exception occurred when detaching auto-scaling the the instance:",
+                "error":str(e)
+            })
 
 
 def main(instance_id, asg_name,incident_id):
