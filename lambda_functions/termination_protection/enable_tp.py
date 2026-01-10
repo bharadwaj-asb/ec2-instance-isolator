@@ -6,22 +6,20 @@ import logging
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-try:
-    client = boto3.client('ec2')
-except Exception as e:
-    logger.exception({
-        "incident_id": incident_id,
-        "step": "enable_termination_protection",
-        "instance_id": instance_id,
-        "error": str(e)
-    })
-    raise
 
-def main(instance_id,incident_id):
+def main(instance_id,incident_id,client):
     try:
         response = client.modify_instance_attribute(InstanceId=instance_id, DisableApiTermination={
         'Value': True
         })
+        logger.info(
+             {
+                  "step": "enable_tp",
+                  "function": "main",
+                  "incident_id": incident_id,
+                  "message": f"Enabled termination protection for instance: {instance_id}"
+        })
+
     except Exception as e:
         logger.exception({
         "incident_id": incident_id,
@@ -36,6 +34,25 @@ def main(instance_id,incident_id):
 
 
 #if __name__ == '__main__':
-instance_id = ''
-incident_id = ''
-main(instance_id,incident_id)
+
+def lambda_handler(event, context):
+    
+    instance_id = event['InstanceId']
+    incident_id = event['IncidentId']
+    try:
+        client = boto3.client('ec2')
+    except Exception as e:
+        logger.exception({
+            "incident_id": incident_id,
+            "step": "enable_termination_protection",
+            "instance_id": instance_id,
+            "error": str(e)
+        })
+        raise
+
+    main(instance_id,incident_id,client)
+
+    return {
+        'statusCode': 200,
+        'body': json.dumps('Successfully enabled termination protection')
+    }
