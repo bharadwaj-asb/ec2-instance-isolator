@@ -334,10 +334,10 @@ def lambda_handler(event, context):
             "error": str(e)
         })
         raise
-    instance_id = 'i-0299e660d99907b1d'
+    instance_id = event['InstanceId']
     s3_region = 'ap-south-1'
-    account_id = ''
-    incident_id = ''
+    account_id = event['AccountId']
+    incident_id = event['IncidentId']
     if is_quarantined(client,instance_id,incident_id):
          return
     basic_ec2_md = main(client, instance_id,s3_region,account_id,incident_id)
@@ -363,11 +363,4 @@ def lambda_handler(event, context):
     upload_to_s3(json_body,s3_key,instance_id,incident_id)
 
     # Return value for step functions
-    return_value= { 
-    "instance_id": instance_id,
-    "incident_id": incident_id,
-    "step": "capture_ec2_md",
-    "target_groups": affected_target_groups,
-    "timestamp": datetime.now().isoformat() + "Z"
-    }
-
+    return final_md
