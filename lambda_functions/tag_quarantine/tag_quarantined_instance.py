@@ -62,10 +62,11 @@ def lambda_handler(event, context):
         "message":"Exception occurred when creating EC2 client.",
         "error": str(e)
     })
-    raise
+        raise
 
     main(client,instance_id,incident_id)
     return {
+        **event,
         'statusCode': 200,
         'body': json.dumps('Successfully tagged the quarantined instance')
     }

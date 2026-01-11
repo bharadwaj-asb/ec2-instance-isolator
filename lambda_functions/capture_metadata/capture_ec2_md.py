@@ -335,7 +335,6 @@ def lambda_handler(event, context):
         })
         raise
     instance_id = event['InstanceId']
-    s3_region = 'ap-south-1'
     account_id = event['AccountId']
     incident_id = event['IncidentId']
     if is_quarantined(client,instance_id,incident_id):
@@ -347,6 +346,8 @@ def lambda_handler(event, context):
     tgrps = get_target_groups_for_instance(instance_id,incident_id) # Add to step function output
     elb_names = get_load_balancers_for_target_groups(tgrps['ELBArns'],instance_id,incident_id) # Add to step function output
     final_md = {
+        'InstanceId':instance_id,
+        'IncidentId':incident_id,
         'BasicMetadata': basic_ec2_md,
         'InstanceProfiles': instance_profile,
         'ASGNames': asg_names,
@@ -359,7 +360,7 @@ def lambda_handler(event, context):
             default=json_serializer,
             indent=2
         )
-    s3_key = (f"{account_id}/{s3_region}/{incident_id}/instance/metadata.json")
+    s3_key = (f"{account_id}/ap-south-1/{incident_id}/instance/metadata.json")
     upload_to_s3(json_body,s3_key,instance_id,incident_id)
 
     # Return value for step functions

@@ -56,6 +56,7 @@ def lambda_handler(event, context):
     main(client,instance_id, asg_name, incident_id)
 
     return {
+        **event,
         'statusCode': 200,
         'body': json.dumps('Successfully detached EC2 instance from autoscaling group:')
     }

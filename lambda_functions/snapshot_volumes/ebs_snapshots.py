@@ -131,7 +131,6 @@ def lambda_handler(event, context):
         })
         raise
 
-    s3_region = 'ap-south-1'
     account_id = ''
     snapshot_ids = main(vols,instance_id,incident_id)
     json_body = json.dumps(
@@ -139,9 +138,10 @@ def lambda_handler(event, context):
             default=json_serializer,
             indent=2
         )
-    s3_key = (f"{account_id}/{s3_region}/{incident_id}/snapshots/snapshotids.json")
+    s3_key = (f"{account_id}/ap-south-1/{incident_id}/snapshots/snapshotids.json")
     upload_to_s3(json_body,s3_key,instance_id,incident_id)
     return {
+         **event,
         'statusCode': 200,
-        'body': json.dumps('Hello from Lambda!')
+        'body': json.dumps('Successfully captured EBS snapshots')
     }

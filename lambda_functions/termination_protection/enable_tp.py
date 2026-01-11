@@ -30,11 +30,7 @@ def main(instance_id,incident_id,client):
     })
     #raise
 
-    
-
-
-#if __name__ == '__main__':
-
+  
 def lambda_handler(event, context):
     
     instance_id = event['InstanceId']
@@ -53,6 +49,7 @@ def lambda_handler(event, context):
     main(instance_id,incident_id,client)
 
     return {
+        **event,
         'statusCode': 200,
         'body': json.dumps('Successfully enabled termination protection')
     }

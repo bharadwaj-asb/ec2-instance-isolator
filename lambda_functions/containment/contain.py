@@ -67,7 +67,6 @@ def main(client,instance_id,sg_id,incident_id):
         "error": str(e)
     })
 
-#if __name__ == '__main__':
 
 def lambda_handler(event, context):
     instance_id = event['InstanceId']
@@ -86,6 +85,7 @@ def lambda_handler(event, context):
 
     main(client,instance_id,sg_id,incident_id)
     return {
+        **event,
         'statusCode': 200,
         'body': json.dumps('Successfully isolated the instance')
     }

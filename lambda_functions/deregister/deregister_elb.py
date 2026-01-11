@@ -61,6 +61,7 @@ def lambda_handler(event, context):
     target_group_arn = event['TargetGroups']
     elb2(instance_id, target_group_arn,incident_id)
     return {
+        **event,
         'statusCode': 200,
         'body': json.dumps('Successfully deregistering ELB')
     }
