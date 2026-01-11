@@ -6,21 +6,10 @@ import logging
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-try:
-    client = boto3.client('ec2')
-except Exception as e:
-    logger.exception({
-        "incident_id": incident_id,
-        "step": "ebs_snapshots",
-        "instance_id": instance_id,
-        "message":"Exception occurred when creating EC2 client.",
-        "error": str(e)
-    })
-    raise
 
 
 # Function to create snapshot and encrypt it
-def main(vols,instance_id,incident_id): 
+def main(client,vols,instance_id,incident_id): 
         snap_ids = {'SnapshotIds': []}
         for each_vol in vols:
             try:
@@ -124,16 +113,35 @@ def json_serializer(obj):
     return str(obj)
 
 
-vols = ['vol-0ea89318869f3b3e7','vol-0dc1237660cd35cd4'] # Input to be taken from step functions
-instance_id=''
-incident_id=''
-s3_region = 'ap-south-1'
-account_id = ''
-snapshot_ids = main(vols,instance_id,incident_id)
-json_body = json.dumps(
-        snapshot_ids,
-        default=json_serializer,
-        indent=2
-    )
-s3_key = (f"{account_id}/{s3_region}/{incident_id}/snapshots/snapshotids.json")
-upload_to_s3(json_body,s3_key,instance_id,incident_id)
+
+
+def lambda_handler(event, context):
+    vols = event['EBSVolumes'] # Input to be taken from step functions
+    instance_id=event['InstanceId']
+    incident_id=event['IncidentId']
+    try:
+        client = boto3.client('ec2')
+    except Exception as e:
+        logger.exception({
+            "incident_id": incident_id,
+            "step": "ebs_snapshots",
+            "instance_id": instance_id,
+            "message":"Exception occurred when creating EC2 client.",
+            "error": str(e)
+        })
+        raise
+
+    s3_region = 'ap-south-1'
+    account_id = ''
+    snapshot_ids = main(vols,instance_id,incident_id)
+    json_body = json.dumps(
+            snapshot_ids,
+            default=json_serializer,
+            indent=2
+        )
+    s3_key = (f"{account_id}/{s3_region}/{incident_id}/snapshots/snapshotids.json")
+    upload_to_s3(json_body,s3_key,instance_id,incident_id)
+    return {
+        'statusCode': 200,
+        'body': json.dumps('Hello from Lambda!')
+    }

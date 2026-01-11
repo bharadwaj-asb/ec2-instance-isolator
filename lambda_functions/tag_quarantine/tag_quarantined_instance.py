@@ -6,19 +6,8 @@ import logging
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-try:
-    client = boto3.client('ec2')
-except Exception as e:
-    logger.exception({
-        "incident_id": incident_id,
-        "step": "ebs_snapshots",
-        "instance_id": instance_id,
-        "message":"Exception occurred when creating EC2 client.",
-        "error": str(e)
-    })
-    raise
 
-def main(instance_id,incident_id):
+def main(client,instance_id,incident_id):
     try:
         response = client.create_tags(
             Resources=[instance_id],
@@ -59,6 +48,24 @@ def main(instance_id,incident_id):
     
 
 
-instance_id = 'i-01a9e1bfa13067635'
-incident_id=''
-main(instance_id,incident_id)
+
+def lambda_handler(event, context):
+    instance_id = event['InstanceId']
+    incident_id=event['IncidentId']
+    try:
+        client = boto3.client('ec2')
+    except Exception as e:
+        logger.exception({
+        "incident_id": incident_id,
+        "step": "ebs_snapshots",
+        "instance_id": instance_id,
+        "message":"Exception occurred when creating EC2 client.",
+        "error": str(e)
+    })
+    raise
+
+    main(client,instance_id,incident_id)
+    return {
+        'statusCode': 200,
+        'body': json.dumps('Successfully tagged the quarantined instance')
+    }

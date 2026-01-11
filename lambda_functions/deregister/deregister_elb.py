@@ -53,9 +53,14 @@ def elb2(instance_id, target_group_arn,incident_id):
         #raise
 
 
-#if __name__ == '__main__':
-instance_id = 'i-0b2f164b1f525e017'
-elb_name = 'test-elb-1'
-incident_id = ''
-target_group_arn = 'arn:aws:elasticloadbalancing:ap-south-1:961341555743:targetgroup/test-tg/cf8a311eeede17b1'
-elb2(instance_id, target_group_arn,incident_id)
+
+def lambda_handler(event, context):
+    instance_id = event['InstanceId']
+    elb_name = event['ELBNames']
+    incident_id = event['IncidentId']
+    target_group_arn = event['TargetGroups']
+    elb2(instance_id, target_group_arn,incident_id)
+    return {
+        'statusCode': 200,
+        'body': json.dumps('Successfully deregistering ELB')
+    }

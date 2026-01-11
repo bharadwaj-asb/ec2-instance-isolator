@@ -38,7 +38,7 @@ def main(client,instance_id, asg_name,incident_id):
 
 
 def lambda_handler(event, context):
-    instance_id = 'i-0485bd939bfd72eea'
+    instance_id = event['InstanceId']
     asg_name = event['ASGNames']
     incident_id = event['IncidentId']
     try:
