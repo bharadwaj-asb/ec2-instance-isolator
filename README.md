@@ -22,5 +22,8 @@ Design and implement an automated incident response workflow that:
 6. Create encrypted EBS snapshots of all attached volumes
 7. Tag resources to mark quarantine status and investigation context
 
+## Step Functions graph
+![image](./stepfunctions_graph.png)
+
 ## Inspiration & References
 This project is inspired by AWS incident response guidance and reference implementations, and extends them with workflow orchestration, audit visibility, and forensic-focused design choices suitable for real-world security operations.
