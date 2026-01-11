@@ -9,9 +9,9 @@
       "Arguments": {
         "FunctionName": "arn:aws:lambda:ap-south-1:961341555743:function:capture_metadata:$LATEST",
         "Payload": {
-          "InstanceId": "",
-          "IncidentId": "INC123456",
-          "AccountId": "961341555743"
+          "InstanceId.$": "$.InstanceId",
+          "IncidentId.$": "$.IncidentId",
+          "AccountId.$": "$.AccountId"
         }
       },
       "Retry": [
